@@ -14,7 +14,7 @@ export default function EditableRow({ data, setInEditMode }) {
         <input type='text' defaultValue={data.address.city} />
       </td>
       <td>
-        <button>Save</button>
+        <button type="button">Save</button>
         <button onClick={() => setInEditMode({ status: false, row: null })}> Cancel</button>
       </td>
     </tr>

@@ -4,6 +4,8 @@ const cors = require('cors');
 const app = express();
 const port = 9000;
 
+require('./db/connection');
+
 app.use(express.json());
 app.use(cors());
 
