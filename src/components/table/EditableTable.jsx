@@ -1,37 +1,63 @@
 import React, { useEffect, useState } from 'react';
 import EditableRow from './utils/EditableRow';
+import axios from 'axios';
 
 export default function EditableTable() {
   const [tableData, setTableData] = useState([]);
-  const [inEditMode, setInEditMode] = useState({ status: false, row: null });
+  const [newRowData, setNewRowData] = useState({});
+  const [inEditMode, setInEditMode] = useState({ status: false, row: null, index: 1 });
+
+  const loadUsers = async () => {
+    const { data } = await axios.get('/api/v1/users');
+    console.log(data);
+    setTableData([...data.users, { name: '', phone: '', city: '' }]);
+  };
+
+  const handleAddNewRow = async payload => {
+    try {
+      if (payload.name && payload.phone) {
+        const { data } = await axios.post('/api/v1/add/user', payload);
+        alert(data);
+      }
+      loadUsers();
+      setNewRowData();
+    } catch (error) {
+      alert(error);
+    }
+  };
+
+  const handleUpdateRow = async (id, payload) => {
+    try {
+      const { data } = await axios.put(`/api/v1/update/${id}`, payload);
+      alert(data);
+      loadUsers();
+      setInEditMode({ status: false, row: null, index: NaN });
+    } catch (error) {
+      alert(error);
+    }
+  };
+
+  const handleDeleteRow = async id => {
+    try {
+      const { data } = await axios.delete(`/api/v1/delete/${id}`);
+      alert(data);
+      loadUsers();
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   useEffect(() => {
-    fetch('https://jsonplaceholder.typicode.com/users')
-      .then(response => response.json())
-      .then(users =>
-        setTableData([
-          ...users,
-          {
-            id: users.length + 1,
-            name: '',
-            phone: '',
-            address: { city: '' },
-          },
-        ]),
-      );
-    fetch('http://localhost:8000/users').then(response =>
-      response.json().then(res => console.log(res)),
-    );
+    loadUsers();
   }, []);
 
   const handleChange = e => {
-    const updatingData = tableData[tableData.length - 1];
-    updatingData[e.target.name] = e.target.value;
+    setNewRowData({ ...newRowData, [e.target.name]: e.target.value });
   };
 
   return (
-    <form>
-      <table className='table'>
+    <table className='table'>
+      <thead>
         <tr>
           <th>No.</th>
           <th>Name</th>
@@ -39,11 +65,18 @@ export default function EditableTable() {
           <th>Address</th>
           <th>Operations</th>
         </tr>
+      </thead>
+      <tbody>
         {tableData.map((item, index) => {
-          return inEditMode.status && inEditMode.row.id === item.id ? (
-            <EditableRow data={inEditMode.row} setInEditMode={setInEditMode} />
+          return inEditMode.status && inEditMode.row._id === item._id ? (
+            <EditableRow
+              key={index}
+              data={inEditMode}
+              setInEditMode={setInEditMode}
+              handleUpdateRow={handleUpdateRow}
+            />
           ) : (
-            <tr key={item?.id}>
+            <tr key={index}>
               <td>{index + 1}</td>
               <td>
                 {item.name ? (
@@ -54,14 +87,14 @@ export default function EditableTable() {
               </td>
               <td>
                 {item.phone ? (
-                  item.name
+                  item.phone
                 ) : (
                   <input name='phone' placeholder='Input user phone' onChange={handleChange} />
                 )}
               </td>
               <td>
-                {item.address.city ? (
-                  item.address.city
+                {item.city ? (
+                  item.city
                 ) : (
                   <input name='city' placeholder='Input user city' onChange={handleChange} />
                 )}
@@ -71,14 +104,16 @@ export default function EditableTable() {
                   <>
                     <button
                       type='button'
-                      onClick={() => setInEditMode({ status: true, row: item })}
+                      onClick={() => setInEditMode({ status: true, row: item, index: index + 1 })}
                     >
                       Edit
                     </button>
-                    <button type='button'>Delete</button>
+                    <button type='button' onClick={() => handleDeleteRow(item._id)}>
+                      Delete
+                    </button>
                   </>
                 ) : (
-                  <button type='button' onClick={() => console.log(tableData)}>
+                  <button type='button' onClick={() => handleAddNewRow(newRowData)}>
                     Save
                   </button>
                 )}
@@ -86,7 +121,7 @@ export default function EditableTable() {
             </tr>
           );
         })}
-      </table>
-    </form>
+      </tbody>
+    </table>
   );
 }
